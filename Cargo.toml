@@ -45,6 +45,7 @@ http2 = ["curl-sys/http2"]
 static-curl = ["curl-sys/static-curl"]
 static-ssl = ["curl-sys/static-ssl"]
 force-system-lib-on-osx = ['curl-sys/force-system-lib-on-osx']
+windows-openssl = ["curl-sys/windows-openssl"]
 
 [[test]]
 name = "atexit"
