@@ -58,23 +58,27 @@ fn main() {
     fs::copy(
         "curl/include/curl/curlver.h",
         include.join("curl/curlver.h"),
-    ).unwrap();
+    )
+    .unwrap();
     fs::copy("curl/include/curl/easy.h", include.join("curl/easy.h")).unwrap();
     fs::copy(
         "curl/include/curl/mprintf.h",
         include.join("curl/mprintf.h"),
-    ).unwrap();
+    )
+    .unwrap();
     fs::copy("curl/include/curl/multi.h", include.join("curl/multi.h")).unwrap();
     fs::copy(
         "curl/include/curl/stdcheaders.h",
         include.join("curl/stdcheaders.h"),
-    ).unwrap();
+    )
+    .unwrap();
     fs::copy("curl/include/curl/system.h", include.join("curl/system.h")).unwrap();
     fs::copy("curl/include/curl/urlapi.h", include.join("curl/urlapi.h")).unwrap();
     fs::copy(
         "curl/include/curl/typecheck-gcc.h",
         include.join("curl/typecheck-gcc.h"),
-    ).unwrap();
+    )
+    .unwrap();
 
     let pkgconfig = dst.join("lib/pkgconfig");
     fs::create_dir_all(&pkgconfig).unwrap();
@@ -91,7 +95,8 @@ fn main() {
             .replace("@SUPPORT_FEATURES@", "")
             .replace("@SUPPORT_PROTOCOLS@", "")
             .replace("@CURLVERSION@", "7.61.1"),
-    ).unwrap();
+    )
+    .unwrap();
 
     let mut cfg = cc::Build::new();
     cfg.out_dir(&build)
@@ -270,7 +275,7 @@ fn main() {
             .define("SIZEOF_SHORT", "2");
 
         if cfg!(feature = "ssl") {
-            if target.contains("-apple-") {
+            if target.contains("-apple-") && !cfg!(feature = "static-ssl") {
                 cfg.define("USE_DARWINSSL", None)
                     .file("curl/lib/vtls/darwinssl.c");
                 if xcode_major_version().map_or(true, |v| v >= 9) {
@@ -327,6 +332,10 @@ fn main() {
     if target.contains("-apple-") {
         println!("cargo:rustc-link-lib=framework=Security");
         println!("cargo:rustc-link-lib=framework=CoreFoundation");
+        if cfg!(feature = "static-ssl") {
+            println!("cargo:rustc-link-lib=ssl");
+            println!("cargo:rustc-link-lib=crypto");
+        }
     }
 }
 
@@ -419,16 +428,13 @@ fn try_pkg_config() -> bool {
 }
 
 fn xcode_major_version() -> Option<u8> {
-    let output = Command::new("xcodebuild")
-        .arg("-version")
-        .output()
-        .ok()?;
+    let output = Command::new("xcodebuild").arg("-version").output().ok()?;
     if output.status.success() {
         let stdout = String::from_utf8_lossy(&output.stdout);
         let mut words = stdout.split_whitespace();
         if words.next()? == "Xcode" {
             let version = words.next()?;
-            return version[..version.find('.')?].parse().ok()
+            return version[..version.find('.')?].parse().ok();
         }
     }
     println!("unable to determine Xcode version, assuming >= 9");
